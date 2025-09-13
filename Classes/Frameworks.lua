@@ -87,7 +87,7 @@ end
 
 --- Search for files that were overriden by mod_overrides and ignore them in other folders
 function FrameworkBase:FindAlreadyOverriden()
-	for _, mod in pairs(DB:mods()) do
+	for _, mod in pairs(DB and DB.mods and DB:mods() or {}) do
 		if mod.enabled then
 			for _, file in pairs(mod.files) do
 				self._overridden_files[file] = true

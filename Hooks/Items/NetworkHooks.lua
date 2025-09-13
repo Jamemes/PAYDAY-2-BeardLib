@@ -16,8 +16,8 @@ if F == "huskplayermovement" then
     --Removes the need of thq material config for custom melee
     local mtr_cubemap = Idstring("mtr_cubemap")
     Hooks:PostHook(HuskPlayerMovement, "anim_cbk_spawn_melee_item", "BeardLibForceMeleeTHQ", function(self, unit, graphic_object)
-        if alive(self._melee_item_unit) then
-            local peer = managers.network:session():peer_by_unit(self._unit)
+        local peer = managers.network:session():peer_by_unit(self._unit)
+        if peer and alive(self._melee_item_unit) then
             local id = peer:melee_id()
             local tweak = tweak_data.blackmarket.melee_weapons[id]
             if tweak.custom then
@@ -83,7 +83,7 @@ elseif F == "newraycastweaponbase" then
 ----------------------------------------------------------------
 elseif F == "unitnetworkhandler" then
     local set_equipped_weapon = UnitNetworkHandler.set_equipped_weapon
-    function UnitNetworkHandler:set_equipped_weapon(unit, item_index, blueprint_string, cosmetics_string, sender)
+    function UnitNetworkHandler:set_equipped_weapon(unit, item_index, blueprint_string, sender)
         if not self._verify_character(unit) then
             return
         end
@@ -98,7 +98,7 @@ elseif F == "unitnetworkhandler" then
         if peer._last_beardlib_weapon_string and peer:set_equipped_weapon_beardlib(peer._last_beardlib_weapon_string, SyncConsts.WeaponVersion) then
             peer._last_beardlib_weapon_string = nil
         else
-            set_equipped_weapon(self, unit, item_index, blueprint_string, cosmetics_string, sender)
+            set_equipped_weapon(self, unit, item_index, blueprint_string, sender)
         end
     end
 ----------------------------------------------------------------
@@ -159,28 +159,6 @@ elseif F == "basenetworksession" then
     end)
 ----------------------------------------------------------------
 elseif F == "networkpeer" then
-    local tradable_item_verif = NetworkPeer.tradable_verify_outfit
-    function NetworkPeer:tradable_verify_outfit(signature)
-        local outfit = self:blackmarket_outfit()
-
-        if outfit.primary and outfit.primary.cosmetics and tweak_data.blackmarket.weapon_skins[outfit.primary.cosmetics.id] then
-            if tweak_data.blackmarket.weapon_skins[outfit.primary.cosmetics.id].is_a_unlockable  then
-                return
-            end
-        else
-            return
-        end
-
-        if outfit.secondary and outfit.secondary.cosmetics and tweak_data.blackmarket.weapon_skins[outfit.secondary.cosmetics.id] then
-            if tweak_data.blackmarket.weapon_skins[outfit.secondary.cosmetics.id].is_a_unlockable  then
-                return
-            end
-        else
-            return
-        end
-
-        return tradable_item_verif(self, signature)
-    end
 ----------------------------------------------------------------
 elseif F == "menumanager" then
     Hooks:PostHook(MenuManager, "setup_local_lobby_character", "BeardLibExtraOutfitSetupLocalLobby", function(self)
@@ -196,7 +174,7 @@ elseif F == "menumanager" then
 ----------------------------------------------------------------
 elseif F == "connectionnetworkhandler" then
     --Sets the correct data out of NetworkPeer instead of straight from the parameters
-    Hooks:PostHook(ConnectionNetworkHandler, "sync_outfit", "BeardLibSyncOutfitProperly", function(self, outfit_string, outfit_version, outfit_signature, sender)
+    Hooks:PostHook(ConnectionNetworkHandler, "sync_outfit", "BeardLibSyncOutfitProperly", function(self, outfit_string, outfit_version, sender)
         local peer = self._verify_sender(sender)
         if not peer then
             return

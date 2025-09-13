@@ -11,7 +11,6 @@ function Sync:SyncGameSettings(peer_id)
         else
             LuaNetworking:SendToPeers(sync_game_settings_id, data)
         end
-		managers.platform:refresh_rich_presence_state()
     end
 end
 
@@ -167,7 +166,7 @@ function Sync:GetCleanedBlueprint(blueprint, factory_id)
 end
 
 function Sync:GetSpoofedGrenade(grenade)
-	local grenade_tweak = tweak_data.blackmarket.projectiles[grenade]
+	local grenade_tweak = tweak_data.blackmarket.projectiles and tweak_data.blackmarket.projectiles[grenade]
 	if grenade_tweak and grenade_tweak.custom then
 		return grenade_tweak.based_on or managers.blackmarket._defaults.grenade
 	end
@@ -205,20 +204,6 @@ function Sync:CleanOutfitString(str, is_henchman)
     local material = is_henchman and list.mask_blueprint.material or list.mask.blueprint.material
 	if material and tweak_data.blackmarket.materials[material.id].custom then
 		material.id = "plastic"
-    end
-
-    if list.primary and list.primary.cosmetics then
-        local cosmetic_primary = tweak_data.blackmarket.weapon_skins[list.primary.cosmetics.id]
-        if cosmetic_primary and cosmetic_primary.custom then
-            list.primary.cosmetics = nil
-        end
-    end
-
-    if list.secondary and list.secondary.cosmetics then
-        local cosmetic_secondary = tweak_data.blackmarket.weapon_skins[list.secondary.cosmetics.id]
-        if cosmetic_secondary and cosmetic_secondary.custom then
-            list.secondary.cosmetics = nil
-        end
     end
 
     if list.primary then
@@ -273,27 +258,6 @@ function Sync:CleanOutfitString(str, is_henchman)
 			end
 		end
 	end
-	
-
-    local player_style = tweak_data.blackmarket.player_styles[list.player_style]
-    if player_style then
-        -- Got to do the checks individually, otherwise we can't have custom variations on non custom outfits.
-        if player_style.custom then
-            list.player_style = "continental" -- Sync an actual outfit to stop invisible bodies because of weird object sync.
-        end
-
-        if player_style.material_variations then
-            local suit_variation = player_style.material_variations[list.suit_variation]
-            if suit_variation and suit_variation.custom then
-            	list.suit_variation = "default"
-            end
-        end
-    end
-
-    local gloves = tweak_data.blackmarket.gloves[list.glove_id]
-    if gloves and gloves.custom then
-        list.glove_id = "default"
-    end
 
 	return self:OutfitStringFromList(list, is_henchman)
 end
@@ -311,17 +275,11 @@ local STRING_TO_INDEX = {
 	mask_color = 2,
 	mask_pattern = 3,
 	mask_material = 4,
-	armor_skin = 5,
 	primary = 6,
 	primary_blueprint = 7,
 	secondary = 8,
 	secondary_blueprint = 9,
 	melee_weapon = 10,
-	primary_cosmetics = 11,
-	secondary_cosmetics = 12,
-	player_style = 13,
-	suit_variation = 14,
-	glove_id = 15
 }
 
 function Sync:UnpackCompactOutfit(outfit_string)
@@ -341,40 +299,10 @@ function Sync:UnpackCompactOutfit(outfit_string)
 				material = {id = get("mask_material") or "plastic"}
 			}
 		},
-		armor_skin = get("armor_skin") or "none",
 		primary = {factory_id = get("primary") or "wpn_fps_ass_amcar"},
 		secondary = {factory_id = get("secondary") or "wpn_fps_pis_g17"},
 		melee_weapon = get("melee_weapon") or self._defaults.melee_weapon,
-		player_style = get("player_style") or "none",
-		suit_variation = get("suit_variation") or "default",
-		glove_id = get("glove_id") or "default"
 	}
-
-	for i=1,2 do
-		local current = i == 1 and "primary" or "secondary"
-
-		local blueprint_string = get(current.."_blueprint")
-		local cosmetics_string = get(current.."_cosmetics")
-
-		if blueprint_string then
-			blueprint_string = string.gsub(blueprint_string, "_", " ")
-			outfit[current].blueprint = managers.weapon_factory:unpack_blueprint_from_string(outfit[current].factory_id, blueprint_string)
-		else
-			outfit[current].blueprint = managers.weapon_factory:get_default_blueprint_by_factory_id(outfit[current].factory_id)
-		end
-
-		if cosmetics_string then
-			local cosmetics_data = string.split(cosmetics_string, "-")
-			local weapon_skin_id = cosmetics_data[1] or "!"
-			local quality_index_s = cosmetics_data[2] or "1"
-			local bonus_id_s = cosmetics_data[3] or "0"
-
-			if weapon_skin_id ~= "!" then
-				local quality = tweak_data.economy:get_entry_from_index("qualities", tonumber(quality_index_s))
-				outfit[current].cosmetics = {id = weapon_skin_id, quality = quality, bonus = bonus_id_s == "1" and true or false}
-			end
-		end
-	end
 
 	return outfit
 end
@@ -384,7 +312,6 @@ function Sync:CompactOutfit()
 
 	local s = ""
 	s = s .. bm:_outfit_string_mask()
-	s = s .. " " .. tostring(bm:equipped_armor_skin())
 
 	local equipped_primary = bm:equipped_primary()
 	local equipped_secondary = bm:equipped_secondary()
@@ -401,22 +328,6 @@ function Sync:CompactOutfit()
 	end
 
 	s = s .. " " .. tostring(bm:equipped_melee_weapon())
-
-	for i=1,2 do
-		local current = i == 1 and equipped_primary or equipped_secondary
-		if current and current.cosmetics then
-			local entry = tostring(current.cosmetics.id)
-			local quality = tostring(tweak_data.economy:get_index_from_entry("qualities", current.cosmetics.quality) or 1)
-			local bonus = current.cosmetics.bonus and "1" or "0"
-			s = s .. " " .. entry .. "-" .. quality .. "-" .. bonus
-		else
-			s = s .. " " .. "!-1-0"
-		end
-	end
-
-	s = s .. " " .. tostring(bm:equipped_player_style())
-	s = s .. " " .. tostring(bm:equipped_suit_variation())
-	s = s .. " " .. tostring(bm:equipped_glove_id())
 
 	return s
 end
@@ -440,15 +351,6 @@ function Sync:BeardLibWeaponString(selection_index)
 		s = s .. " " .. "nil" .. " " .. "0"
 	end
 
-	if equipped and equipped.cosmetics then
-		local entry = tostring(equipped.cosmetics.id)
-		local quality = tostring(tweak_data.economy:get_index_from_entry("qualities", equipped.cosmetics.quality) or 1)
-		local bonus = equipped.cosmetics.bonus and "1" or "0"
-		s = s .. " " .. entry .. "-" .. quality .. "-" .. bonus
-	else
-		s = s .. " " .. "nil-1-0"
-	end
-
 	return s
 end
 
@@ -465,20 +367,6 @@ function Sync:UnpackBeardLibWeaponString(outfit_string)
 		blueprint = string.split(get(2), "_"),
 		data_split = data
 	}
-
-	local cosmetics_string = get(3)
-
-	if cosmetics_string then
-		local cosmetics_data = string.split(cosmetics_string, "-")
-		local weapon_skin_id = cosmetics_data[1] or "!"
-		local quality_index_s = cosmetics_data[2] or "1"
-		local bonus_id_s = cosmetics_data[3] or "0"
-
-		if weapon_skin_id ~= "!" then
-			local quality = tweak_data.economy:get_entry_from_index("qualities", tonumber(quality_index_s))
-			data.cosmetics = {id = weapon_skin_id, quality = quality, bonus = bonus_id_s == "1" and true or false}
-		end
-	end
 
 	return tbl
 end

@@ -135,7 +135,7 @@ function BeardLibFileManager:AddFile(ext, path, file)
 	BLT.AssetManager:CreateEntry(path, ext, file)
     Global.fm.added_files[k_ext] = Global.fm.added_files[k_ext] or {}
 	Global.fm.added_files[k_ext][path:key()] = {file = file, path = path}
-	if k_ext == texture_key then
+	if Application.reload_textures and k_ext == texture_key then
 		Application:reload_textures({path})
 	end
 end
@@ -146,12 +146,15 @@ function BeardLibFileManager:LoadFileFromDB(ext, path)
 	end
 
 	local k_ext = ext:key()
+	
+	if blt and blt.wren_io then
+		blt.wren_io.invoke(BeardLib.Utils:GetNameFromModPath(BeardLib.ModPath), "AssetLoader", nil, "load", ext, path)
+	end
 
-	blt.wren_io.invoke(BeardLib.Utils:GetNameFromModPath(BeardLib.ModPath), "AssetLoader", nil, "load", ext, path)
     Global.fm.added_files[k_ext] = Global.fm.added_files[k_ext] or {}
 	Global.fm.added_files[k_ext][path:key()] = {path = path}
 
-	if k_ext == texture_key then
+	if Application.reload_textures and k_ext == texture_key then
 		Application:reload_textures({path:id()})
 	end
 end
@@ -174,7 +177,7 @@ function BeardLibFileManager:RemoveFile(ext, path)
 			DB:remove_entry(ext, path)
 		end
 		Global.fm.added_files[k_ext][k_path] = nil
-		if k_ext == texture_key then
+		if Application.reload_textures and k_ext == texture_key then
 			Application:reload_textures({path})
 		end
 	end

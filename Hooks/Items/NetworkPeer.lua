@@ -5,6 +5,21 @@ local SyncConsts = BeardLib.Constants.Sync
 
 Hooks:Register(peer_send_hook)
 
+if type(Setup.is_unloading) == "nil" then
+	function Setup:is_unloading()
+		return self._started_unloading_packages and true
+	end
+end
+
+if type(NetworkPeer.melee_id) ~= "function" then
+	function NetworkPeer:melee_id()
+		local outfit_string = self:profile("outfit_string")
+		local data = string.split(outfit_string, " ")
+
+		return data[managers.blackmarket:outfit_string_index("melee_weapon")]
+	end
+end
+
 Hooks:Add(peer_send_hook, "BeardLibCustomWeaponFix", function(self, func_name, params)
     if self == managers.network:session():local_peer() then
         return
@@ -197,14 +212,16 @@ function NetworkPeer:set_equipped_weapon_beardlib(weapon_string, outfit_version,
                         local guess_id = id:gsub("_npc", "")
                         if fac[guess_id] ~= nil then
                             scene:_delete_character_weapon(unit, "all")
-                            scene:_select_lobby_character_pose(i, unit, {factory_id = id:gsub("_npc", "")})
-                            scene:set_character_equipped_weapon(unit, guess_id, blueprint, "primary", weapon.cosmetics)
+							if scene._select_lobby_character_pose then
+								scene:_select_lobby_character_pose(i, unit, {factory_id = id:gsub("_npc", "")})
+							end
+                            scene:set_character_equipped_weapon(unit, guess_id, blueprint, "primary")
                         end
                     end
                 end
             elseif alive(self._unit) then
                 local inv = self._unit:inventory()
-                inv:add_unit_by_factory_name(id, true, true, managers.weapon_factory:blueprint_to_string(id, blueprint), weapon.data_split[3].cosmetics or inv:cosmetics_string_from_peer(peer, weapon.id) or "")
+                inv:add_unit_by_factory_name(id, true, true, managers.weapon_factory:blueprint_to_string(id, blueprint))
             end
             return true
         else
@@ -245,23 +262,6 @@ function NetworkPeer:set_outfit_string_beardlib(outfit_string, outfit_version)
     if bm.melee_weapons[new_outfit.melee_weapon] and bm.melee_weapons[new_outfit.melee_weapon].custom then
         old_outfit.melee_weapon = new_outfit.melee_weapon
     end
-
-    if bm.player_styles[new_outfit.player_style] and bm.player_styles[new_outfit.player_style].custom then
-        old_outfit.player_style = new_outfit.player_style
-    end
-
-    -- First check if the outfit we are trying to find the variant for exists and has variants.
-    if bm.player_styles[new_outfit.player_style] and bm.player_styles[new_outfit.player_style].material_variations then
-        local suit_variation_td = bm.player_styles[new_outfit.player_style].material_variations[new_outfit.suit_variation]
-        --Now check that the variant we are looking for exists and is custom.
-        if suit_variation_td and suit_variation_td.custom then
-            old_outfit.suit_variation = new_outfit.suit_variation
-        end
-    end
-
-    if bm.gloves[new_outfit.glove_id] and bm.gloves[new_outfit.glove_id].custom then
-        old_outfit.glove_id = new_outfit.glove_id
-    end 
 
     self._profile.outfit_string = SyncUtils:OutfitStringFromList(old_outfit)
     if old_outfit_string ~= self._profile.outfit_string then
@@ -335,9 +335,6 @@ function NetworkPeer:beardlib_reload_outfit()
         local unit = scene._lobby_characters[i]
         local outfit = managers.blackmarket:unpack_outfit_from_string(self._profile.outfit_string)
         scene:set_character_mask_by_id(outfit.mask.mask_id, outfit.mask.blueprint, unit, i)
-        scene:set_character_armor_skin(outfit.armor_skin or "none", unit)
-        scene:set_character_player_style(outfit.player_style or "none", outfit.suit_variation or "default", unit)
-        scene:set_character_gloves(outfit.glove_id or "default", unit)
 
         if self._last_beardlib_weapon_string ~= nil then
             self:set_equipped_weapon_beardlib(self._last_beardlib_weapon_string, SyncConsts.WeaponVersion)
@@ -349,8 +346,8 @@ function NetworkPeer:beardlib_reload_outfit()
         kit_menu.renderer:set_slot_outfit(self:id(), self:character(), self._profile.outfit_string)
     end
 
-    if managers.menu_component then
-        managers.menu_component:peer_outfit_updated(self:id())
+    if managers.menu_component and managers.menu_component._contract_gui then
+		managers.menu_component._contract_gui:refresh()
     end
 end
 

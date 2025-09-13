@@ -54,6 +54,35 @@ if F == "weaponfactorymanager" then
     end)
 ----------------------------------------------------------------
 elseif F == "blackmarketmanager" then
+	if type(BlackMarketManager.outfit_string_from_list) ~= "function" then
+		function BlackMarketManager:outfit_string_from_list(outfit)
+			local s = ""
+			s = s .. outfit.mask.mask_id
+			s = s .. " " .. outfit.mask.blueprint.color.id
+			s = s .. " " .. outfit.mask.blueprint.pattern.id
+			s = s .. " " .. outfit.mask.blueprint.material.id
+			s = s .. " " .. outfit.armor
+			s = s .. " " .. outfit.character
+			local primary_string = managers.weapon_factory:blueprint_to_string(outfit.primary.factory_id, outfit.primary.blueprint)
+			primary_string = string.gsub(primary_string, " ", "_")
+			s = s .. " " .. outfit.primary.factory_id .. " " .. primary_string
+			local secondary_string = managers.weapon_factory:blueprint_to_string(outfit.secondary.factory_id, outfit.secondary.blueprint)
+			secondary_string = string.gsub(secondary_string, " ", "_")
+			s = s .. " " .. outfit.secondary.factory_id .. " " .. secondary_string
+			local equipped_deployable = outfit.deployable
+			if equipped_deployable then
+				s = s .. " " .. outfit.deployable
+				s = s .. " " .. tostring(outfit.deployable_amount)
+			else
+				s = s .. " " .. "nil" .. " " .. "0"
+			end
+			s = s .. " " .. tostring(outfit.concealment_modifier)
+			s = s .. " " .. tostring(outfit.melee_weapon)
+			s = s .. " " .. tostring(outfit.grenade)
+			return s
+		end
+	end
+
     local orig_get = BlackMarketManager.get_silencer_concealment_modifiers
     function BlackMarketManager:get_silencer_concealment_modifiers(weapon, ...)
         local weapon_id = weapon.weapon_id or managers.weapon_factory:get_weapon_id_by_factory_id(weapon.factory_id)
@@ -393,65 +422,8 @@ elseif F == "hudbelt" then
     end)
 ----------------------------------------------------------------
 elseif F == "blackmarketgui" then
-    -- Universal icon backwards compatibility.
-    Hooks:PostHook(BlackMarketGui, "populate_weapon_category_new", "BeardLibUniversalIconMiniIconFix", function(self, data)
-        local category = data.category
-        local crafted_category = managers.blackmarket:get_crafted_category(category) or {}
-
-        for i, index in pairs(data.on_create_data) do
-            local crafted = crafted_category[index]
-
-            if crafted then
-                local equipped_cosmetic_id = crafted and crafted.cosmetics and crafted.cosmetics.id
-                local color_tweak = tweak_data.blackmarket.weapon_skins[equipped_cosmetic_id]
-
-                if color_tweak and color_tweak.universal then
-                    local guis_catalog = "guis/"
-                    local bundle_folder = color_tweak.texture_bundle_folder
-                    if bundle_folder then
-                        guis_catalog = guis_catalog .. "dlcs/" .. tostring(bundle_folder) .. "/"
-                    end
-
-                    local mini_icons = data[i].mini_icons
-                    mini_icons[#mini_icons].texture = guis_catalog .. "weapon_skins/" .. equipped_cosmetic_id
-                end
-            end
-        end
-    end)
-
-    Hooks:PostHook(BlackMarketGui, "populate_weapon_cosmetics", "BeardLibUniversalIconMiniIconFix2", function(self, data)
-        local crafted = managers.blackmarket:get_crafted_category(data.category)[data.prev_node_data and data.prev_node_data.slot]
-        local equipped_cosmetic_id = crafted and crafted.cosmetics and crafted.cosmetics.id
-        local color_tweak = tweak_data.blackmarket.weapon_skins[equipped_cosmetic_id]
-
-        if color_tweak and color_tweak.universal then
-            local guis_catalog = "guis/"
-            local bundle_folder = color_tweak.texture_bundle_folder
-            if bundle_folder then
-                guis_catalog = guis_catalog .. "dlcs/" .. tostring(bundle_folder) .. "/"
-            end
-
-            data[1].bitmap_texture = guis_catalog .. "weapon_skins/" .. equipped_cosmetic_id
-        end
-    end)
 ----------------------------------------------------------------
 elseif F == "menunodecustomizeweaponcolorgui" then
-    -- Universal icon backwards compatibility.
-    Hooks:PreHook(MenuCustomizeWeaponColorInitiator, "create_grid", "BeardLibUniversalIconGridFix", function(self, node, colors_data)
-        for _, color_data in pairs(colors_data) do
-            local color_tweak = tweak_data.blackmarket.weapon_skins[color_data.value]
-
-            if color_tweak and color_tweak.universal then
-                local guis_catalog = "guis/"
-                local bundle_folder = color_tweak.texture_bundle_folder
-                if bundle_folder then
-                    guis_catalog = guis_catalog .. "dlcs/" .. tostring(bundle_folder) .. "/"
-                end
-
-                color_data.texture = guis_catalog .. "weapon_skins/" .. color_data.value
-            end
-        end
-    end)
 ----------------------------------------------------------------
 elseif F == "tweakdata" then
 	local function icon_and_unit_check(list, folder, friendly_name, uses_texture_val, only_check_units)
@@ -512,10 +484,6 @@ elseif F == "tweakdatapd2" then
 	Hooks:PreHook(BlackMarketTweakData, "_init_weapon_mods", "CallAddCustomWeaponModsToWeapons", function(self, tweak_data)
 		-- Temporarily pre-generate this data as some custom stuff might rely on it.
 		-- It'll get redone by vanilla anyway.
-		if self.weapon_skins then
-			tweak_data.weapon.factory:create_bonuses(tweak_data, self.weapon_skins)
-		end
-		self.weapon_charms = tweak_data.weapon.factory:create_charms(tweak_data)
 
 		Hooks:Call("BeardLibAddCustomWeaponModsToWeapons", tweak_data.weapon.factory, tweak_data)
 
@@ -552,11 +520,6 @@ elseif F == "tweakdatapd2" then
 
 	Hooks:PostHook(WeaponTweakData, "init", "BeardLibWeaponTweakDataInit", function(self, tweak_data)
 		Hooks:Call("BeardLibPostCreateCustomProjectiles", tweak_data)
-	end)
-
-	Hooks:PostHook(BlackMarketTweakData, "init", "CallPlayerStyleAdditionHooks", function(self)
-		Hooks:Call("BeardLibCreateCustomPlayerStyles", self)
-		Hooks:Call("BeardLibCreateCustomPlayerStyleVariants", self)
 	end)
 ----------------------------------------------------------------
 elseif F == "playerstandard" then

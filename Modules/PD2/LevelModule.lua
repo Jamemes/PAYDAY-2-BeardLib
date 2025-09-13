@@ -152,7 +152,6 @@ function LevelModule:AddLevelDataToTweak(l_self)
         name_id = self._config.name_id or ("heist_" .. id .. "_name"),
         briefing_id = self._config.brief_id or ("heist_" .. id .. "_brief"),
         world_name = self._levels_less_path,
-        ai_group_type = l_self.ai_groups[self._config.ai_group_type] or l_self.ai_groups.default,
         intro_event = self._config.intro_event or "nothing",
         outro_event = self._config.outro_event or "nothing",
         music = self._config.music or "heist",

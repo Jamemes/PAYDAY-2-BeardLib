@@ -23,7 +23,7 @@ overwrite_meta_function(World, "spawn_unit", function(self, unit_name, ...)
 		elseif Global.fm.added_files[key_unit] then
 			local file = Global.fm.added_files[key_unit][ukey]
 			if file then
-				Managers.File:LoadAsset(ids_unit, unit_name, file.file)
+				-- Managers.File:LoadAsset(ids_unit, unit_name, file.file)
 			end
 		end
 	end

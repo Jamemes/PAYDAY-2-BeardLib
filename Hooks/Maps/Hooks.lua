@@ -20,12 +20,14 @@ if F == "missionmanager" then
 ----------------------------------------------------------------
 elseif F == "killzonemanager" then
 	-- Adds "kill" to killzone so you can kill the player instantly
-	KillzoneManager.type_upd_funcs.kill = function (obj, t, dt, data)
-		if not data.killed then
-			data.timer = data.timer + dt
-			if data.next_fire < data.timer then
-				data.killed = true
-				obj:_kill_unit(data.unit)
+	if KillzoneManager.type_upd_funcs then
+		KillzoneManager.type_upd_funcs.kill = function (obj, t, dt, data)
+			if not data.killed then
+				data.timer = data.timer + dt
+				if data.next_fire < data.timer then
+					data.killed = true
+					obj:_kill_unit(data.unit)
+				end
 			end
 		end
 	end
@@ -291,15 +293,6 @@ elseif F == "groupaitweakdata" then
 elseif F == "narrativetweakdata" then
 	-- Not sure about this, could be pointless.
 	Hooks:PostHook(NarrativeTweakData, "init", "MapFrameworkAddFinalNarrativeData", SimpleClbk(NarrativeTweakData.set_job_wrappers))
-----------------------------------------------------------------
-elseif F == "elementfilter" then
-    --Overkill decided not to add a one down check alongside the difficulties, so here's one, because why not.
-
-    Hooks:PostHook(ElementFilter, "_check_difficulty", "BeardLibFilterOneDownCheck", function(self)
-        if self._values.one_down and Global.game_settings.one_down then
-            return true
-        end
-    end)
 ----------------------------------------------------------------
 elseif F == "menumanager" then
 	local o_refresh = MenuManager.refresh_level_select

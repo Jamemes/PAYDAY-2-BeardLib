@@ -40,7 +40,7 @@ elseif F == "systemmenumanager" then
     GenericSystemMenuManager = GenericSystemMenuManager or SystemMenuManager.GenericSystemMenuManager
 
     function GenericSystemMenuManager:show_custom(data)
-        if _G.setup and _G.setup:has_queued_exec() then
+        if _G.setup and _G.setup.__exec then
             return
         end
         local success = self:_show_class(data, BeardLibGenericDialog, BeardLibGenericDialog, data.force)

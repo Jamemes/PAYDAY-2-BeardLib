@@ -64,7 +64,7 @@ function WeaponModule:RegisterHook()
         end
     end
 
-    Hooks:PostHook(WeaponTweakData, "_init_new_weapons", self._config.weapon.id .. "AddWeaponTweakData", function(w_self, autohit_rifle_default, autohit_pistol_default, autohit_shotgun_default, autohit_lmg_default, autohit_snp_default, autohit_smg_default, autohit_minigun_default, damage_melee_default, damage_melee_effect_multiplier_default, aim_assist_rifle_default, aim_assist_pistol_default, aim_assist_shotgun_default, aim_assist_lmg_default, aim_assist_snp_default, aim_assist_smg_default, aim_assist_minigun_default)
+	Hooks:PostHook(WeaponTweakData, "_init_new_weapons", self._config.weapon.id .. "AddWeaponTweakData", function(w_self, autohit_rifle_default, autohit_pistol_default, autohit_shotgun_default, autohit_lmg_default, autohit_snp_default, autohit_smg_default, damage_melee_default, damage_melee_effect_multiplier_default, aim_assist_rifle_default, aim_assist_pistol_default, aim_assist_shotgun_default, aim_assist_lmg_default, aim_assist_snp_default, aim_assist_smg_default)
         local config = self._config.weapon
 
         if w_self[config.id] then

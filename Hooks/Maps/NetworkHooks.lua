@@ -121,7 +121,7 @@ elseif F == "networkpeer" then
 					local job_index = tweak_data.narrative:get_index_from_job_id(job_id)
 					local level_index = tweak_data.levels:get_index_from_level_id(split_data[2])
 					local difficulty_index = tweak_data:difficulty_to_index(split_data[3])
-					managers.network._handlers.connection:sync_game_settings(job_index, level_index, difficulty_index, Global.game_settings.one_down, Global.game_settings.weekly_skirmish, rpc)
+					managers.network._handlers.connection:sync_game_settings(job_index, level_index, difficulty_index, rpc)
 				end
 			end
 			local function disconnect()
@@ -181,17 +181,13 @@ elseif F == "clientnetworksession" then
 	--- This handles 1 of 3 places in which custom maps are downloaded from (via the ingame downloader)
 	--- When the heist is a vanilla heist, it falls back to the original function without attempting to do anything
 	--- When the map is already downloaded, this function only corrects the indices based on the IDs that are sent by the xuid parameter.
-	function ClientNetworkSession:on_join_request_reply(
-		reply, my_peer_id, my_character, level_index,
-		difficulty_index, one_down, state_index, server_character, user_id,
-		mission, job_id_index, job_stage, alternative_job_stage,
-		interupt_job_stage_level_index, xuid, ...)
 
+	function ClientNetworkSession:on_join_request_reply(reply, my_peer_id, my_character, level_index, difficulty_index, state_index, server_character, user_id, mission, job_id_index, job_stage, alternative_job_stage, interupt_job_stage_level_index, xuid, ...)
 		local params = table.pack(...)
 
 		local function orig(override_reply)
 			orig_join_request_reply(self, override_reply or reply, my_peer_id, my_character, level_index,
-			difficulty_index, one_down, state_index, server_character, user_id,
+			difficulty_index, state_index, server_character, user_id,
 			mission, job_id_index, job_stage, alternative_job_stage,
 			interupt_job_stage_level_index, xuid, unpack(params, 1, params.n))
 		end
@@ -309,7 +305,6 @@ elseif F == "menumanager" then
 			Global.game_settings.mission = managers.job:current_mission()
 			Global.game_settings.world_setting = managers.job:current_world_setting()
 			Global.game_settings.difficulty = job_data.difficulty
-			Global.game_settings.one_down = job_data.one_down
 			local matchmake_attributes = self:get_matchmake_attributes()
 			if Network:is_server() then
 				SyncUtils:SyncGameSettings()
@@ -328,11 +323,9 @@ elseif F == "menumanager" then
 	Hooks:Add("NetworkReceivedData", sync_game_settings_id, function(sender, id, data)
 		if id == sync_game_settings_id then
 			local split_data = string.split(data, "|")
-
 			managers.network._handlers.connection:sync_game_settings(tweak_data.narrative:get_index_from_job_id(split_data[1]),
 			tweak_data.levels:get_index_from_level_id(split_data[2]),
 			tweak_data:difficulty_to_index(split_data[3]),
-			Global.game_settings.one_down,
 			managers.network:session():peer(sender):rpc())
 		end
 	end)
