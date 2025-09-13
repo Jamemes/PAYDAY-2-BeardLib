@@ -1,10 +1,10 @@
 {
-	"name" : "BeardLib",
+	"name" : "BeardLib for Classic Updates",
 	"description" : "Library for easier script file manipulation and mod creation",
 	"author" : "GREAT BIG BUSHY BEARD & Luffy",
 	"contact" : "simon@modworkshop.net",
 	"priority" : 500,
-	"version" : "5.X",
+	"version" : "0",
 	"undisablable" : true,
 	"is_library" : true,
 	"color" : "0 0.44 1",
