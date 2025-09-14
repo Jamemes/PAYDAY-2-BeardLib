@@ -168,7 +168,7 @@ end
 function Sync:GetSpoofedGrenade(grenade)
 	local grenade_tweak = tweak_data.blackmarket.projectiles and tweak_data.blackmarket.projectiles[grenade]
 	if grenade_tweak and grenade_tweak.custom then
-		return grenade_tweak.based_on or managers.blackmarket._defaults.grenade
+		return grenade_tweak.based_on or "frag"
 	end
 	return grenade
 end
@@ -292,7 +292,7 @@ function Sync:UnpackCompactOutfit(outfit_string)
 
 	local outfit = {
 		mask = {
-			mask_id = get("mask") or self._defaults.mask,
+			mask_id = get("mask") or "character_locked",
 			blueprint = {
 				color = {id = get("mask_color") or "nothing"},
 				pattern = {id = get("mask_pattern") or "no_color_no_material"},
@@ -301,7 +301,7 @@ function Sync:UnpackCompactOutfit(outfit_string)
 		},
 		primary = {factory_id = get("primary") or "wpn_fps_ass_amcar"},
 		secondary = {factory_id = get("secondary") or "wpn_fps_pis_g17"},
-		melee_weapon = get("melee_weapon") or self._defaults.melee_weapon,
+		melee_weapon = get("melee_weapon") or "weapon",
 	}
 
 	return outfit
